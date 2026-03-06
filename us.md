@@ -13,7 +13,7 @@ I WANT TO create automation rules
 SO THAT I can automate the habitat
 
 AS operator
-I WANT TO edit existing automation rules
+I WANT TO edit/delete existing automation rules
 SO THAT I can modify the behavior of the habitat
 
 AS operator

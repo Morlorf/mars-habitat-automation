@@ -151,7 +151,7 @@ body {
 
 .dashboard-layout {
   display: grid;
-  grid-template-columns: 1fr 420px;
+  grid-template-columns: 1fr 480px;
   gap: 24px;
   padding: 24px 32px;
   height: calc(100vh - 76px);
@@ -209,6 +209,35 @@ body {
   -webkit-text-fill-color: transparent;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+/* View toggle buttons */
+.view-toggle {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
+  padding: 3px;
+}
+
+.view-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 1rem;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.view-btn.active {
+  background: rgba(255, 107, 74, 0.2);
+  color: var(--mars-accent);
+}
+
+.view-btn:hover:not(.active) {
+  color: var(--text-secondary);
 }
 
 .panel-content {
@@ -422,6 +451,70 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* ── SENSOR LIST VIEW ──────────────────────────────────────── */
+
+.sensor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sensor-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 16px;
+  background: rgba(20, 20, 30, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.sensor-row:hover {
+  background: var(--mars-surface-glass-hover);
+  border-color: var(--mars-border-glass-strong);
+}
+
+.sensor-row-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.sensor-row-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: white;
+}
+
+.sensor-row-value small {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+
+.sensor-row-time {
+  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.sensor-row.warning {
+  border-left: 3px solid var(--mars-yellow);
+}
+
+.sensor-row.critical {
+  border-left: 3px solid var(--mars-red);
+}
+
+.sensor-row.nominal {
+  border-left: 3px solid var(--mars-green);
+}
+
 /* ── ACTUATORS ─────────────────────────────────────────────── */
 
 .actuators-panel {
@@ -431,109 +524,60 @@ body {
 .actuator-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 12px;
 }
 
 .actuator-card {
-  background: rgba(20, 20, 30, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius);
-  padding: 20px;
+  border-radius: var(--radius-sm);
+  padding: 14px;
   display: flex;
-  flex-direction: column;
   align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  user-select: none;
 }
 
-.actuator-card:hover {
-  transform: translateY(-2px);
-  background: var(--mars-surface-glass-hover);
-  border-color: var(--mars-border-glass-strong);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+.actuator-card.actuator-on {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.actuator-card.actuator-on:hover {
+  background: rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 15px var(--mars-green-glow);
+}
+
+.actuator-card.actuator-off {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.actuator-card.actuator-off:hover {
+  background: rgba(239, 68, 68, 0.12);
+  box-shadow: 0 0 15px var(--mars-red-glow);
 }
 
 .actuator-name {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 12px;
-  text-align: center;
 }
 
-.actuator-state {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 1.4rem;
-  font-weight: 700;
-  margin-bottom: 16px;
+.actuator-indicator {
+  font-size: 1.2rem;
 }
 
-.actuator-state.on {
+.actuator-indicator.on {
   color: var(--mars-green);
-  filter: drop-shadow(0 0 8px var(--mars-green-glow));
+  filter: drop-shadow(0 0 6px var(--mars-green-glow));
 }
 
-.actuator-state.off {
-  color: var(--text-dim);
-}
-
-.actuator-btn {
-  width: 100%;
-  padding: 12px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  font-family: 'Outfit', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  border: none;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.actuator-btn::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 100%;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.15);
-  transform: translate(-50%, -50%) scale(0);
-  border-radius: 50%;
-  transition: transform 0.4s ease;
-}
-
-.actuator-btn:active::after {
-  transform: translate(-50%, -50%) scale(2.5);
-  opacity: 0;
-  transition: 0s;
-}
-
-.actuator-btn.turn-on {
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--mars-green);
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.actuator-btn.turn-on:hover {
-  background: rgba(16, 185, 129, 0.25);
-  box-shadow: 0 0 15px var(--mars-green-glow);
-}
-
-.actuator-btn.turn-off {
-  background: rgba(239, 68, 68, 0.15);
+.actuator-indicator.off {
   color: var(--mars-red);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.actuator-btn.turn-off:hover {
-  background: rgba(239, 68, 68, 0.25);
-  box-shadow: 0 0 15px var(--mars-red-glow);
+  opacity: 0.5;
 }
 
 /* ── RULES ─────────────────────────────────────────────────── */
@@ -617,6 +661,12 @@ body {
   align-items: center;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rule-actions-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .delete-confirm {

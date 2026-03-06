@@ -70,12 +70,23 @@ function useApiState() {
 
 // ── Sensor Card ─────────────────────────────────────────────
 
-function SensorCard({ source, event }) {
+function SensorCard({ source, event, listView }) {
   const p = event.payload || {};
   const status = p.status || 'unknown';
   const ago = event._cached_at
     ? `${Math.round((Date.now() - new Date(event._cached_at).getTime()) / 1000)}s ago`
     : '';
+
+  if (listView) {
+    return (
+      <div className={`sensor-row ${status}`}>
+        <span className="sensor-row-name">{source.replace(/_/g, ' ')}</span>
+        <span className="sensor-row-value">{typeof p.value === 'number' ? p.value.toFixed(2) : p.value ?? '—'} <small>{p.unit || ''}</small></span>
+        <span className={`sensor-status ${status}`}>● {status}</span>
+        <span className="sensor-row-time">Last update: {ago}</span>
+      </div>
+    );
+  }
 
   return (
     <div className={`sensor-card ${status}`}>
@@ -85,10 +96,9 @@ function SensorCard({ source, event }) {
       </div>
       <div className="sensor-value">{typeof p.value === 'number' ? p.value.toFixed(2) : p.value ?? '—'}</div>
       <div className="sensor-unit">{p.unit || ''}</div>
-      <div className="sensor-metric">{p.metric}</div>
       <div className="sensor-footer">
         <span className={`sensor-status ${status}`}>● {status}</span>
-        <span className="sensor-time">{ago}</span>
+        <span className="sensor-time">Last update: {ago}</span>
       </div>
     </div>
   );
@@ -99,15 +109,9 @@ function SensorCard({ source, event }) {
 function ActuatorCard({ name, state, onToggle }) {
   const isOn = state === 'ON';
   return (
-    <div className="actuator-card">
+    <div className={`actuator-card ${isOn ? 'actuator-on' : 'actuator-off'}`} onClick={() => onToggle(name, isOn ? 'OFF' : 'ON')}>
       <div className="actuator-name">{name.replace(/_/g, ' ')}</div>
-      <div className={`actuator-state ${isOn ? 'on' : 'off'}`}>{state}</div>
-      <button
-        className={`actuator-btn ${isOn ? 'turn-off' : 'turn-on'}`}
-        onClick={() => onToggle(name, isOn ? 'OFF' : 'ON')}
-      >
-        Turn {isOn ? 'OFF' : 'ON'}
-      </button>
+      <div className={`actuator-indicator ${isOn ? 'on' : 'off'}`}>{isOn ? '●' : '○'}</div>
     </div>
   );
 }
@@ -247,6 +251,7 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [deletingRuleId, setDeletingRuleId] = useState(null);
+  const [sensorListView, setSensorListView] = useState(false);
   const { connected, lastEvent } = useWebSocket();
   const { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState } = useApiState();
 
@@ -345,7 +350,8 @@ export default function App() {
       const sensorInfo = SENSORS.find((s) => s.id === sourceCond.value);
       const opLabel = OPERATOR_LABELS[valueCond.operator] || valueCond.operator;
       const unit = sensorInfo ? sensorInfo.unit : '';
-      return `${sourceCond.value} ${opLabel} ${valueCond.value}${unit}`;
+      const sensorLabel = sensorInfo ? sensorInfo.label.toLowerCase() : sourceCond.value.replace(/_/g, ' ');
+      return `${sensorLabel} ${opLabel} ${valueCond.value}${unit}`;
     }
     return c.conditions.map((x) => `${x.field} ${x.operator} ${x.value}`).join(` ${c.logic} `);
   };
@@ -377,6 +383,10 @@ export default function App() {
         <section className="dashboard-panel sensors-panel">
           <div className="panel-header">
             <h2>📡 Telemetry Stream</h2>
+            <div className="view-toggle">
+              <button className={`view-btn ${!sensorListView ? 'active' : ''}`} onClick={() => setSensorListView(false)} title="Grid view">▦</button>
+              <button className={`view-btn ${sensorListView ? 'active' : ''}`} onClick={() => setSensorListView(true)} title="List view">☰</button>
+            </div>
           </div>
           <div className="panel-content">
             {sortedLocations.length === 0 && (
@@ -387,9 +397,9 @@ export default function App() {
             {sortedLocations.map((loc) => (
               <div key={loc} className="location-group">
                 <h3 className="location-header">{loc.replace(/_/g, ' ').toUpperCase()}</h3>
-                <div className="sensor-grid">
+                <div className={sensorListView ? 'sensor-list' : 'sensor-grid'}>
                   {sensorGroups[loc].map(([source, event]) => (
-                    <SensorCard key={source} source={source} event={event} />
+                    <SensorCard key={source} source={source} event={event} listView={sensorListView} />
                   ))}
                 </div>
               </div>
@@ -425,37 +435,37 @@ export default function App() {
             </div>
             <div className="panel-content">
               <div className="rules-list">
-                {rules.map((rule) => (
-                  <div key={rule.id} className={`rule-card ${rule.is_active ? '' : 'inactive'}`}>
-                    <div className="rule-info">
-                      <div className="rule-title-row">
+                {rules.map((rule) => {
+                  const actLabel = rule.action.actuator.replace(/_/g, ' ');
+                  return (
+                    <div key={rule.id} className={`rule-card ${rule.is_active ? '' : 'inactive'}`}>
+                      <div className="rule-info">
                         <h3>{rule.name}</h3>
-                        <span className="priority-badge">P{rule.priority}</span>
-                      </div>
-                      <div className="rule-detail">
-                        IF {formatCondition(rule.condition)} → {rule.action.actuator} = {rule.action.state}
-                      </div>
-                    </div>
-                    <div className="rule-actions">
-                      <div
-                        className={`toggle ${rule.is_active ? 'active' : ''}`}
-                        onClick={() => handleToggleRule(rule)}
-                      ></div>
-                      <button className="btn btn-secondary btn-sm" onClick={() => { setEditingRule(rule); setShowModal(true); }}>
-                        Edit
-                      </button>
-                      {deletingRuleId === rule.id ? (
-                        <div className="delete-confirm">
-                          <button className="btn btn-danger btn-sm" onClick={() => confirmDelete(rule.id)}>Confirm</button>
+                        <div className="rule-detail">
+                          IF {formatCondition(rule.condition)} → set {actLabel} to {rule.action.state}
                         </div>
-                      ) : (
-                        <button className="btn btn-danger btn-sm" onClick={() => setDeletingRuleId(rule.id)}>
-                          ×
-                        </button>
-                      )}
+                      </div>
+                      <div className="rule-actions">
+                        <div
+                          className={`toggle ${rule.is_active ? 'active' : ''}`}
+                          onClick={() => handleToggleRule(rule)}
+                        ></div>
+                        <div className="rule-actions-right">
+                          <button className="btn btn-secondary btn-sm" onClick={() => { setEditingRule(rule); setShowModal(true); }}>
+                            Edit
+                          </button>
+                          {deletingRuleId === rule.id ? (
+                            <button className="btn btn-danger btn-sm" onClick={() => confirmDelete(rule.id)}>Confirm</button>
+                          ) : (
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeletingRuleId(rule.id)}>
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {rules.length === 0 && (
                   <div className="empty-state">
                     <p>No active rules</p>
