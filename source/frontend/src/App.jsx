@@ -114,26 +114,46 @@ function ActuatorCard({ name, state, onToggle }) {
 
 // ── Rule Form Modal ─────────────────────────────────────────
 
-const OPERATORS = ['==', '!=', '>', '>=', '<', '<='];
-const SENSOR_IDS = [
-  'greenhouse_temperature', 'entrance_humidity', 'co2_hall',
-  'hydroponic_ph', 'water_tank_level', 'corridor_pressure',
-  'air_quality_pm25', 'air_quality_voc',
+const SENSORS = [
+  { id: 'greenhouse_temperature', label: 'Greenhouse Temperature', unit: '°C' },
+  { id: 'entrance_humidity', label: 'Entrance Humidity', unit: '%' },
+  { id: 'co2_hall', label: 'CO₂ Hall', unit: 'ppm' },
+  { id: 'hydroponic_ph', label: 'Hydroponic pH', unit: 'pH' },
+  { id: 'water_tank_level', label: 'Water Tank Level', unit: '%' },
+  { id: 'corridor_pressure', label: 'Corridor Pressure', unit: 'kPa' },
+  { id: 'air_quality_pm25', label: 'Air Quality PM2.5', unit: 'µg/m³' },
+  { id: 'air_quality_voc', label: 'Air Quality VOC', unit: 'idx' },
 ];
+
+const OPERATORS = ['<', '<=', '==', '>', '>='];
+const OPERATOR_LABELS = { '<': '<', '<=': '≤', '==': '=', '>': '>', '>=': '≥' };
+
 const ACTUATOR_IDS = ['cooling_fan', 'entrance_humidifier', 'hall_ventilation', 'habitat_heater'];
 
+/** Extract sensor / operator / value from stored rule conditions for editing */
+function parseRuleForEdit(initial) {
+  if (!initial) return {};
+  const conds = initial.condition?.conditions || [];
+  const sourceCond = conds.find((c) => c.field === 'source');
+  const valueCond = conds.find((c) => c.field === 'payload.value');
+  return {
+    sensor: sourceCond?.value || '',
+    operator: valueCond?.operator || '>',
+    value: valueCond?.value ?? '',
+  };
+}
+
 function RuleFormModal({ onClose, onSave, initial }) {
+  const parsed = parseRuleForEdit(initial);
   const [name, setName] = useState(initial?.name || '');
   const [desc, setDesc] = useState(initial?.description || '');
-  const [field, setField] = useState(initial?.condition?.conditions?.[0]?.field || 'source');
-  const [op, setOp] = useState(initial?.condition?.conditions?.[0]?.operator || '==');
-  const [val, setVal] = useState(initial?.condition?.conditions?.[0]?.value ?? '');
-  const [field2, setField2] = useState(initial?.condition?.conditions?.[1]?.field || 'payload.value');
-  const [op2, setOp2] = useState(initial?.condition?.conditions?.[1]?.operator || '>');
-  const [val2, setVal2] = useState(initial?.condition?.conditions?.[1]?.value ?? '');
-  const [actuator, setActuator] = useState(initial?.action?.actuator || ACTUATOR_IDS[0]);
+  const [sensor, setSensor] = useState(parsed.sensor || '');
+  const [op, setOp] = useState(parsed.operator || '>');
+  const [val, setVal] = useState(parsed.value ?? '');
+  const [actuator, setActuator] = useState(initial?.action?.actuator || '');
   const [actState, setActState] = useState(initial?.action?.state || 'ON');
-  const [priority, setPriority] = useState(initial?.priority ?? 0);
+
+  const selectedSensor = SENSORS.find((s) => s.id === sensor) || {};
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -143,13 +163,13 @@ function RuleFormModal({ onClose, onSave, initial }) {
       condition: {
         logic: 'AND',
         conditions: [
-          { field, operator: op, value: isNaN(val) ? val : Number(val) },
-          ...(field2 && val2 !== '' ? [{ field: field2, operator: op2, value: isNaN(val2) ? val2 : Number(val2) }] : []),
+          { field: 'source', operator: '==', value: sensor },
+          { field: 'payload.value', operator: op, value: Number(val) },
         ],
       },
       action: { actuator, state: actState },
-      is_active: true,
-      priority: Number(priority),
+      is_active: initial?.is_active ?? true,
+      priority: 0,
     };
     onSave(rule);
   };
@@ -168,82 +188,50 @@ function RuleFormModal({ onClose, onSave, initial }) {
             <input value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Optional description" />
           </div>
 
-          <h3 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '20px 0 12px' }}>IF (Condition 1)</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Field</label>
-              <select value={field} onChange={(e) => setField(e.target.value)}>
-                <option value="source">source</option>
-                <option value="location">location</option>
-                <option value="payload.metric">payload.metric</option>
-                <option value="payload.value">payload.value</option>
-                <option value="payload.status">payload.status</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Operator</label>
-              <select value={op} onChange={(e) => setOp(e.target.value)}>
-                {OPERATORS.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-          </div>
-          <div className="form-group">
-            <label>Value</label>
-            <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="e.g. greenhouse_temperature or 24" required />
+          <h3 className="form-section-label">IF (Condition)</h3>
+          <div className="rule-sentence">
+            <select value={sensor} onChange={(e) => setSensor(e.target.value)} className="select-sensor" required>
+              <option value="" disabled>Select sensor...</option>
+              {SENSORS.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+            <select value={op} onChange={(e) => setOp(e.target.value)} className="select-operator">
+              {OPERATORS.map((o) => <option key={o} value={o}>{OPERATOR_LABELS[o]}</option>)}
+            </select>
+            <input
+              type="number"
+              step="any"
+              value={val}
+              onChange={(e) => setVal(e.target.value)}
+              placeholder="value"
+              className="input-value"
+              required
+            />
+            <span className="unit-label">{selectedSensor.unit || ''}</span>
           </div>
 
-          <h3 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '20px 0 12px' }}>AND (Condition 2 — optional)</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Field</label>
-              <select value={field2} onChange={(e) => setField2(e.target.value)}>
-                <option value="">None</option>
-                <option value="source">source</option>
-                <option value="location">location</option>
-                <option value="payload.metric">payload.metric</option>
-                <option value="payload.value">payload.value</option>
-                <option value="payload.status">payload.status</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Operator</label>
-              <select value={op2} onChange={(e) => setOp2(e.target.value)}>
-                {OPERATORS.map((o) => <option key={o} value={o}>{o}</option>)}
-              </select>
-            </div>
-          </div>
-          {field2 && (
-            <div className="form-group">
-              <label>Value</label>
-              <input value={val2} onChange={(e) => setVal2(e.target.value)} placeholder="e.g. 30" />
-            </div>
-          )}
-
-          <h3 style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '20px 0 12px' }}>THEN (Action)</h3>
-          <div className="form-row">
-            <div className="form-group">
-              <label>Actuator</label>
-              <select value={actuator} onChange={(e) => setActuator(e.target.value)}>
-                {ACTUATOR_IDS.map((a) => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>State</label>
-              <select value={actState} onChange={(e) => setActState(e.target.value)}>
-                <option value="ON">ON</option>
-                <option value="OFF">OFF</option>
-              </select>
-            </div>
+          <h3 className="form-section-label">THEN (Action)</h3>
+          <div className="rule-sentence">
+            <select value={actuator} onChange={(e) => setActuator(e.target.value)} className="select-actuator" required>
+              <option value="" disabled>Select actuator...</option>
+              {ACTUATOR_IDS.map((a) => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
+            </select>
+            <span className="to-label">to</span>
+            <select value={actState} onChange={(e) => setActState(e.target.value)} className="select-state">
+              <option value="ON">ON</option>
+              <option value="OFF">OFF</option>
+            </select>
           </div>
 
-          <div className="form-group">
-            <label>Priority (higher = more important)</label>
-            <input type="number" value={priority} onChange={(e) => setPriority(e.target.value)} />
+          <div className="rule-preview">
+            <div className="preview-title">Preview</div>
+            <div className="preview-content">
+              IF {sensor ? selectedSensor.label.toLowerCase() : '[sensor]'} {OPERATOR_LABELS[op]} {val || '?'}{selectedSensor.unit || ''} → set {actuator ? actuator.replace(/_/g, ' ') : '[actuator]'} to {actState}
+            </div>
           </div>
 
           <div className="form-actions">
             <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className="btn btn-primary" disabled={!sensor || !actuator || val === ''}>
               {initial ? 'Update Rule' : 'Create Rule'}
             </button>
           </div>
@@ -259,6 +247,7 @@ export default function App() {
   const [tab, setTab] = useState('sensors');
   const [showModal, setShowModal] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
+  const [deletingRuleId, setDeletingRuleId] = useState(null);
   const { connected, lastEvent } = useWebSocket();
   const { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState } = useApiState();
 
@@ -339,11 +328,11 @@ export default function App() {
     } catch (e) { console.error('Toggle rule error:', e); }
   };
 
-  const handleDeleteRule = async (ruleId) => {
-    if (!confirm('Delete this rule?')) return;
+  const confirmDelete = async (ruleId) => {
     try {
       await fetch(`${API_BASE}/api/rules/${ruleId}`, { method: 'DELETE' });
       setRules((prev) => prev.filter((r) => r.id !== ruleId));
+      setDeletingRuleId(null);
     } catch (e) { console.error('Delete rule error:', e); }
   };
 
@@ -351,6 +340,14 @@ export default function App() {
 
   const formatCondition = (c) => {
     if (!c?.conditions) return '';
+    const sourceCond = c.conditions.find((x) => x.field === 'source');
+    const valueCond = c.conditions.find((x) => x.field === 'payload.value');
+    if (sourceCond && valueCond) {
+      const sensorInfo = SENSORS.find((s) => s.id === sourceCond.value);
+      const opLabel = OPERATOR_LABELS[valueCond.operator] || valueCond.operator;
+      const unit = sensorInfo ? sensorInfo.unit : '';
+      return `${sourceCond.value} ${opLabel} ${valueCond.value}${unit}`;
+    }
     return c.conditions.map((x) => `${x.field} ${x.operator} ${x.value}`).join(` ${c.logic} `);
   };
 
@@ -443,9 +440,17 @@ export default function App() {
                     <button className="btn btn-secondary btn-sm" onClick={() => { setEditingRule(rule); setShowModal(true); }}>
                       Edit
                     </button>
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDeleteRule(rule.id)}>
-                      Delete
-                    </button>
+                    {deletingRuleId === rule.id ? (
+                      <>
+                        <span style={{ fontSize: '0.8rem', marginRight: '8px', color: 'var(--text-secondary)' }}>Sure?</span>
+                        <button className="btn btn-danger btn-sm" onClick={() => confirmDelete(rule.id)}>Yes</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setDeletingRuleId(null)}>No</button>
+                      </>
+                    ) : (
+                      <button className="btn btn-danger btn-sm" onClick={() => setDeletingRuleId(rule.id)}>
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

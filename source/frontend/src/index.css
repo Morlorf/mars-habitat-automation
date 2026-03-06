@@ -592,7 +592,7 @@ body {
   width: 100%;
   padding: 10px 14px;
   font-size: 0.85rem;
-  font-family: inherit;
+  font-family: 'JetBrains Mono', monospace;
   background: var(--mars-surface-2);
   border: 1px solid var(--mars-border);
   border-radius: var(--radius-sm);
@@ -610,7 +610,99 @@ body {
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
+}
+
+.form-section-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--mars-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 20px 0 12px;
+}
+
+/* Inline sentence-style rule builder */
+.rule-sentence {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--mars-border);
+  border-radius: 8px;
+}
+
+.rule-sentence select,
+.rule-sentence input {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--mars-border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.select-sensor {
+  flex: 1;
+  min-width: 160px;
+}
+
+.select-operator {
+  width: 60px;
+  text-align: center;
+}
+
+.input-value {
+  width: 90px;
+}
+
+.select-actuator {
+  flex: 1;
+  min-width: 160px;
+}
+
+.select-state {
+  width: 80px;
+}
+
+.unit-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.to-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.rule-preview {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(255, 159, 67, 0.08);
+  /* orange tint */
+  border-left: 3px solid var(--mars-accent);
+  border-radius: 4px;
+}
+
+.preview-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--mars-accent);
+  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+}
+
+.preview-content {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  line-height: 1.4;
 }
 
 .form-actions {
