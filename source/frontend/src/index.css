@@ -1,0 +1,657 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Mars color palette */
+  --mars-bg: #0a0a0f;
+  --mars-surface: #12121a;
+  --mars-surface-2: #1a1a25;
+  --mars-border: #2a2a3a;
+  --mars-accent: #e85d3a;
+  --mars-accent-glow: rgba(232, 93, 58, 0.3);
+  --mars-green: #34d399;
+  --mars-yellow: #fbbf24;
+  --mars-red: #ef4444;
+  --mars-blue: #60a5fa;
+  --mars-purple: #a78bfa;
+  --text-primary: #e8e8f0;
+  --text-secondary: #8888a0;
+  --text-dim: #555566;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--mars-bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ── HEADER ─────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--mars-border);
+  background: linear-gradient(180deg, rgba(232, 93, 58, 0.05) 0%, transparent 100%);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-brand h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--mars-accent), #ff8c69);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.02em;
+}
+
+.header-brand .subtitle {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: 1px solid var(--mars-border);
+}
+
+.connection-status.connected {
+  color: var(--mars-green);
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(52, 211, 153, 0.05);
+}
+
+.connection-status.disconnected {
+  color: var(--mars-red);
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.05);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+/* ── TABS ───────────────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 12px 24px 0;
+  border-bottom: 1px solid var(--mars-border);
+}
+
+.tab {
+  padding: 10px 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  color: var(--mars-accent);
+  border-bottom-color: var(--mars-accent);
+}
+
+/* ── MAIN CONTENT ───────────────────────────────────────────── */
+
+.main {
+  flex: 1;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* ── SENSOR GROUPS & GRID ───────────────────────────────────── */
+
+.location-group {
+  margin-bottom: 28px;
+}
+
+.location-header {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--mars-accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--mars-border);
+}
+
+.sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.sensor-card {
+  background: var(--mars-surface);
+  border: 1px solid var(--mars-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+
+.sensor-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--mars-accent);
+  opacity: 0.5;
+  transition: opacity 0.3s;
+}
+
+.sensor-card:hover {
+  border-color: var(--mars-accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(232, 93, 58, 0.1);
+}
+
+.sensor-card:hover::before {
+  opacity: 1;
+}
+
+.sensor-card.warning::before {
+  background: var(--mars-yellow);
+}
+
+.sensor-card.critical::before {
+  background: var(--mars-red);
+  opacity: 1;
+}
+
+.sensor-card.critical {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.sensor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.sensor-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sensor-location {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  padding: 2px 8px;
+  background: var(--mars-surface-2);
+  border-radius: 10px;
+}
+
+.sensor-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.2rem;
+  font-weight: 500;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.sensor-unit {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.sensor-metric {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+.sensor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--mars-border);
+}
+
+.sensor-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.sensor-status.nominal {
+  color: var(--mars-green);
+}
+
+.sensor-status.warning {
+  color: var(--mars-yellow);
+}
+
+.sensor-status.critical {
+  color: var(--mars-red);
+}
+
+.sensor-status.offline {
+  color: var(--text-dim);
+}
+
+.sensor-time {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ── RULES PAGE ─────────────────────────────────────────────── */
+
+.rules-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.rules-header h2 {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.btn {
+  padding: 8px 18px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primary {
+  background: var(--mars-accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #d14e2e;
+  box-shadow: 0 4px 16px var(--mars-accent-glow);
+}
+
+.btn-secondary {
+  background: var(--mars-surface-2);
+  color: var(--text-primary);
+  border: 1px solid var(--mars-border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--mars-accent);
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--mars-red);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+.btn-sm {
+  padding: 5px 12px;
+  font-size: 0.78rem;
+}
+
+/* ── RULES TABLE ────────────────────────────────────────────── */
+
+.rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rule-card {
+  background: var(--mars-surface);
+  border: 1px solid var(--mars-border);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  align-items: center;
+  transition: border-color 0.2s;
+}
+
+.rule-card:hover {
+  border-color: var(--mars-accent);
+}
+
+.rule-card.inactive {
+  opacity: 0.5;
+}
+
+.rule-info h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.rule-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.priority-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(167, 139, 250, 0.15);
+  color: var(--mars-purple);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  white-space: nowrap;
+}
+
+.rule-info p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.rule-detail {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--mars-blue);
+  margin-top: 6px;
+  padding: 6px 10px;
+  background: rgba(96, 165, 250, 0.06);
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.rule-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── TOGGLE ─────────────────────────────────────────────────── */
+
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--mars-surface-2);
+  border: 1px solid var(--mars-border);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.toggle.active {
+  background: var(--mars-accent);
+  border-color: var(--mars-accent);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.3s;
+}
+
+.toggle.active::after {
+  transform: translateX(20px);
+}
+
+/* ── ACTUATORS PAGE ─────────────────────────────────────────── */
+
+.actuator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.actuator-card {
+  background: var(--mars-surface);
+  border: 1px solid var(--mars-border);
+  border-radius: var(--radius);
+  padding: 20px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.actuator-card:hover {
+  border-color: var(--mars-accent);
+}
+
+.actuator-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+}
+
+.actuator-state {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.actuator-state.on {
+  color: var(--mars-green);
+}
+
+.actuator-state.off {
+  color: var(--text-dim);
+}
+
+.actuator-btn {
+  width: 100%;
+  padding: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actuator-btn.turn-on {
+  background: rgba(52, 211, 153, 0.1);
+  color: var(--mars-green);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.actuator-btn.turn-off {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--mars-red);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.actuator-btn:hover {
+  opacity: 0.8;
+}
+
+/* ── MODAL ──────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal {
+  background: var(--mars-surface);
+  border: 1px solid var(--mars-border);
+  border-radius: var(--radius);
+  padding: 24px;
+  width: 90%;
+  max-width: 560px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  font-size: 1.1rem;
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--mars-surface-2);
+  border: 1px solid var(--mars-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  border-color: var(--mars-accent);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* ── EMPTY STATE ────────────────────────────────────────────── */
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+
+.empty-state p {
+  font-size: 1rem;
+  margin-bottom: 8px;
+}
+
+.empty-state span {
+  font-size: 0.85rem;
+}
+
+/* ── SCROLLBAR ──────────────────────────────────────────────── */
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--mars-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
