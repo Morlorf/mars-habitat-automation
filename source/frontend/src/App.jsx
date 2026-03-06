@@ -244,7 +244,6 @@ function RuleFormModal({ onClose, onSave, initial }) {
 // ── Main App ────────────────────────────────────────────────
 
 export default function App() {
-  const [tab, setTab] = useState('sensors');
   const [showModal, setShowModal] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [deletingRuleId, setDeletingRuleId] = useState(null);
@@ -336,7 +335,7 @@ export default function App() {
     } catch (e) { console.error('Delete rule error:', e); }
   };
 
-  // ── Render ────────────────────────────────────────────────
+  // ── Render Helpers ────────────────────────────────────────
 
   const formatCondition = (c) => {
     if (!c?.conditions) return '';
@@ -350,6 +349,14 @@ export default function App() {
     }
     return c.conditions.map((x) => `${x.field} ${x.operator} ${x.value}`).join(` ${c.logic} `);
   };
+
+  const sensorGroups = {};
+  Object.entries(sensors).forEach(([source, event]) => {
+    const loc = event.location || 'unknown';
+    if (!sensorGroups[loc]) sensorGroups[loc] = [];
+    sensorGroups[loc].push([source, event]);
+  });
+  const sortedLocations = Object.keys(sensorGroups).sort();
 
   return (
     <>
@@ -366,117 +373,98 @@ export default function App() {
         </div>
       </header>
 
-      <nav className="tabs">
-        <button className={`tab ${tab === 'sensors' ? 'active' : ''}`} onClick={() => setTab('sensors')}>
-          Sensors
-        </button>
-        <button className={`tab ${tab === 'rules' ? 'active' : ''}`} onClick={() => setTab('rules')}>
-          Rules
-        </button>
-        <button className={`tab ${tab === 'actuators' ? 'active' : ''}`} onClick={() => setTab('actuators')}>
-          Actuators
-        </button>
-      </nav>
-
-      <main className="main">
-        {/* ── Sensors Tab ─────────────────────────── */}
-        {tab === 'sensors' && (() => {
-          const groups = {};
-          Object.entries(sensors).forEach(([source, event]) => {
-            const loc = event.location || 'unknown';
-            if (!groups[loc]) groups[loc] = [];
-            groups[loc].push([source, event]);
-          });
-          const sortedLocations = Object.keys(groups).sort();
-          return (
-            <div>
-              {sortedLocations.length === 0 && (
-                <div className="empty-state">
-                  <p>Waiting for sensor data...</p>
-                  <span>Connect to the API Gateway to start receiving events.</span>
-                </div>
-              )}
-              {sortedLocations.map((loc) => (
-                <div key={loc} className="location-group">
-                  <h2 className="location-header">{loc.replace(/_/g, ' ').toUpperCase()}</h2>
-                  <div className="sensor-grid">
-                    {groups[loc].map(([source, event]) => (
-                      <SensorCard key={source} source={source} event={event} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          );
-        })()}
-
-        {/* ── Rules Tab ──────────────────────────── */}
-        {tab === 'rules' && (
-          <>
-            <div className="rules-header">
-              <h2>Automation Rules ({rules.length})</h2>
-              <button className="btn btn-primary" onClick={() => { setEditingRule(null); setShowModal(true); }}>
-                + New Rule
-              </button>
-            </div>
-            <div className="rules-list">
-              {rules.map((rule) => (
-                <div key={rule.id} className={`rule-card ${rule.is_active ? '' : 'inactive'}`}>
-                  <div className="rule-info">
-                    <div className="rule-title-row">
-                      <h3>{rule.name}</h3>
-                      <span className="priority-badge">P{rule.priority}</span>
-                    </div>
-                    {rule.description && <p>{rule.description}</p>}
-                    <div className="rule-detail">
-                      IF {formatCondition(rule.condition)} → {rule.action.actuator} = {rule.action.state}
-                    </div>
-                  </div>
-                  <div className="rule-actions">
-                    <div
-                      className={`toggle ${rule.is_active ? 'active' : ''}`}
-                      onClick={() => handleToggleRule(rule)}
-                    ></div>
-                    <button className="btn btn-secondary btn-sm" onClick={() => { setEditingRule(rule); setShowModal(true); }}>
-                      Edit
-                    </button>
-                    {deletingRuleId === rule.id ? (
-                      <>
-                        <span style={{ fontSize: '0.8rem', marginRight: '8px', color: 'var(--text-secondary)' }}>Sure?</span>
-                        <button className="btn btn-danger btn-sm" onClick={() => confirmDelete(rule.id)}>Yes</button>
-                        <button className="btn btn-secondary btn-sm" onClick={() => setDeletingRuleId(null)}>No</button>
-                      </>
-                    ) : (
-                      <button className="btn btn-danger btn-sm" onClick={() => setDeletingRuleId(rule.id)}>
-                        Delete
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {rules.length === 0 && (
-                <div className="empty-state">
-                  <p>No rules yet</p>
-                  <span>Create your first automation rule to get started.</span>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* ── Actuators Tab ──────────────────────── */}
-        {tab === 'actuators' && (
-          <div className="actuator-grid">
-            {Object.entries(actuators).map(([name, state]) => (
-              <ActuatorCard key={name} name={name} state={state} onToggle={handleToggleActuator} />
-            ))}
-            {Object.keys(actuators).length === 0 && (
+      <main className="dashboard-layout">
+        <section className="dashboard-panel sensors-panel">
+          <div className="panel-header">
+            <h2>📡 Telemetry Stream</h2>
+          </div>
+          <div className="panel-content">
+            {sortedLocations.length === 0 && (
               <div className="empty-state">
-                <p>Loading actuators...</p>
+                <p>Waiting for sensor data...</p>
               </div>
             )}
+            {sortedLocations.map((loc) => (
+              <div key={loc} className="location-group">
+                <h3 className="location-header">{loc.replace(/_/g, ' ').toUpperCase()}</h3>
+                <div className="sensor-grid">
+                  {sensorGroups[loc].map(([source, event]) => (
+                    <SensorCard key={source} source={source} event={event} />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        )}
+        </section>
+
+        <div className="dashboard-sidebar">
+          <section className="dashboard-panel actuators-panel">
+            <div className="panel-header">
+              <h2>⚡ Actuators</h2>
+            </div>
+            <div className="panel-content">
+              <div className="actuator-grid">
+                {Object.entries(actuators).map(([name, state]) => (
+                  <ActuatorCard key={name} name={name} state={state} onToggle={handleToggleActuator} />
+                ))}
+                {Object.keys(actuators).length === 0 && (
+                  <div className="empty-state">
+                    <p>Loading actuators...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <section className="dashboard-panel rules-panel">
+            <div className="panel-header">
+              <h2>🧠 Automation Logic</h2>
+              <button className="btn btn-primary btn-sm" onClick={() => { setEditingRule(null); setShowModal(true); }}>
+                + New
+              </button>
+            </div>
+            <div className="panel-content">
+              <div className="rules-list">
+                {rules.map((rule) => (
+                  <div key={rule.id} className={`rule-card ${rule.is_active ? '' : 'inactive'}`}>
+                    <div className="rule-info">
+                      <div className="rule-title-row">
+                        <h3>{rule.name}</h3>
+                        <span className="priority-badge">P{rule.priority}</span>
+                      </div>
+                      <div className="rule-detail">
+                        IF {formatCondition(rule.condition)} → {rule.action.actuator} = {rule.action.state}
+                      </div>
+                    </div>
+                    <div className="rule-actions">
+                      <div
+                        className={`toggle ${rule.is_active ? 'active' : ''}`}
+                        onClick={() => handleToggleRule(rule)}
+                      ></div>
+                      <button className="btn btn-secondary btn-sm" onClick={() => { setEditingRule(rule); setShowModal(true); }}>
+                        Edit
+                      </button>
+                      {deletingRuleId === rule.id ? (
+                        <div className="delete-confirm">
+                          <button className="btn btn-danger btn-sm" onClick={() => confirmDelete(rule.id)}>Confirm</button>
+                        </div>
+                      ) : (
+                        <button className="btn btn-danger btn-sm" onClick={() => setDeletingRuleId(rule.id)}>
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {rules.length === 0 && (
+                  <div className="empty-state">
+                    <p>No active rules</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
       </main>
 
       {showModal && (
