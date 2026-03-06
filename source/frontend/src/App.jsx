@@ -68,9 +68,54 @@ function useApiState() {
   return { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState };
 }
 
+// ── Mini SVG Chart ──────────────────────────────────────────
+
+const MAX_HISTORY = 60;
+
+function MiniChart({ data, unit }) {
+  if (!data || data.length < 2) {
+    return <div className="chart-empty">Collecting data…</div>;
+  }
+  const W = 300, H = 100, PAD = 4;
+  const vals = data.map(d => d.v);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const range = max - min || 1;
+
+  const points = vals.map((v, i) => {
+    const x = PAD + (i / (vals.length - 1)) * (W - PAD * 2);
+    const y = H - PAD - ((v - min) / range) * (H - PAD * 2);
+    return `${x},${y}`;
+  }).join(' ');
+
+  // gradient area
+  const firstX = PAD;
+  const lastX = PAD + ((vals.length - 1) / (vals.length - 1)) * (W - PAD * 2);
+  const areaPoints = `${firstX},${H - PAD} ${points} ${lastX},${H - PAD}`;
+
+  return (
+    <div className="mini-chart">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="var(--mars-accent)" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="var(--mars-accent)" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <polygon points={areaPoints} fill="url(#chartGrad)" />
+        <polyline points={points} fill="none" stroke="var(--mars-accent)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      </svg>
+      <div className="chart-labels">
+        <span>{min.toFixed(1)}{unit}</span>
+        <span>{max.toFixed(1)}{unit}</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Sensor Card ─────────────────────────────────────────────
 
-function SensorCard({ source, event, listView }) {
+function SensorCard({ source, event, listView, expanded, onToggleExpand, history }) {
   const p = event.payload || {};
   const status = p.status || 'unknown';
   const ago = event._cached_at
@@ -90,15 +135,20 @@ function SensorCard({ source, event, listView }) {
 
   return (
     <div className={`sensor-card ${status}`}>
-      <div className="sensor-header">
-        <span className="sensor-name">{source.replace(/_/g, ' ')}</span>
-        <span className="sensor-location">{event.location}</span>
+      <div className="sensor-card-main">
+        <div className="sensor-header">
+          <span className="sensor-name">{source.replace(/_/g, ' ')}</span>
+          <span className="sensor-location">{event.location}</span>
+        </div>
+        <div className="sensor-value">{typeof p.value === 'number' ? p.value.toFixed(2) : p.value ?? '—'}</div>
+        <div className="sensor-unit">{p.unit || ''}</div>
+        <div className="sensor-footer">
+          <span className={`sensor-status ${status}`}>● {status}</span>
+          <span className="sensor-time">Last update: {ago}</span>
+        </div>
       </div>
-      <div className="sensor-value">{typeof p.value === 'number' ? p.value.toFixed(2) : p.value ?? '—'}</div>
-      <div className="sensor-unit">{p.unit || ''}</div>
-      <div className="sensor-footer">
-        <span className={`sensor-status ${status}`}>● {status}</span>
-        <span className="sensor-time">Last update: {ago}</span>
+      <div className="sensor-chart-panel">
+        <MiniChart data={history} unit={p.unit || ''} />
       </div>
     </div>
   );
@@ -252,17 +302,29 @@ export default function App() {
   const [editingRule, setEditingRule] = useState(null);
   const [deletingRuleId, setDeletingRuleId] = useState(null);
   const [sensorListView, setSensorListView] = useState(false);
+  const [expandedSensor, setExpandedSensor] = useState(null);
   const { connected, lastEvent } = useWebSocket();
   const { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState } = useApiState();
+  const sensorHistoryRef = useRef({});
+  const [sensorHistory, setSensorHistory] = useState({});
 
-  // Live update sensors from WebSocket events
+  // Live update sensors from WebSocket events + accumulate history
   useEffect(() => {
     if (!lastEvent) return;
     if (lastEvent.event_type === 'sensor_reading') {
+      const src = lastEvent.source;
+      const val = lastEvent.payload?.value;
       setSensors((prev) => ({
         ...prev,
-        [lastEvent.source]: { ...lastEvent, _cached_at: new Date().toISOString() },
+        [src]: { ...lastEvent, _cached_at: new Date().toISOString() },
       }));
+      // Append to history
+      if (typeof val === 'number') {
+        const prev = sensorHistoryRef.current[src] || [];
+        const next = [...prev, { t: Date.now(), v: val }].slice(-MAX_HISTORY);
+        sensorHistoryRef.current[src] = next;
+        setSensorHistory((h) => ({ ...h, [src]: next }));
+      }
     }
     if (lastEvent.event_type === 'actuator_command') {
       const act = lastEvent.payload?.actuator_id;
@@ -399,7 +461,15 @@ export default function App() {
                 <h3 className="location-header">{loc.replace(/_/g, ' ').toUpperCase()}</h3>
                 <div className={sensorListView ? 'sensor-list' : 'sensor-grid'}>
                   {sensorGroups[loc].map(([source, event]) => (
-                    <SensorCard key={source} source={source} event={event} listView={sensorListView} />
+                    <SensorCard
+                      key={source}
+                      source={source}
+                      event={event}
+                      listView={sensorListView}
+                      expanded={expandedSensor === source}
+                      onToggleExpand={() => setExpandedSensor(expandedSensor === source ? null : source)}
+                      history={sensorHistory[source] || []}
+                    />
                   ))}
                 </div>
               </div>

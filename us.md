@@ -35,3 +35,11 @@ SO THAT I can react immediately to critical changes in the habitat.
 AS operator
 I WANT TO check sensors status
 SO THAT I can detect malfunctions
+
+AS operator
+I WANT TO see the evolution of sensors data
+SO THAT I can understand the behavior of the habitat
+
+AS operator
+I WANT TO set priority to automation rules
+SO THAT I can prioritize critical automations

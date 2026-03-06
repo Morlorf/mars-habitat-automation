@@ -326,9 +326,86 @@ body {
     0 0 20px var(--mars-accent-glow);
 }
 
+.sensor-card.expanded {
+  grid-column: span 2;
+  border-color: var(--mars-border-glass-strong);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px var(--mars-accent-glow);
+}
+
+.sensor-card.expanded .sensor-card-main {
+  display: inline;
+}
+
 .sensor-card:hover::before {
   opacity: 1;
   box-shadow: 0 0 15px var(--mars-accent);
+}
+
+/* Chart panel inside expanded card */
+.sensor-chart-panel {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  animation: fadeIn 0.3s ease;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.chart-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+}
+
+.chart-close {
+  background: none;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.chart-close:hover {
+  color: var(--mars-red);
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.mini-chart {
+  position: relative;
+}
+
+.mini-chart svg {
+  width: 100%;
+  height: 80px;
+  display: block;
+}
+
+.chart-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.chart-empty {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-style: italic;
 }
 
 .sensor-card.warning::before {
