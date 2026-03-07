@@ -459,24 +459,25 @@ export default function App() {
         <div className="header-brand">
           <div>
             <div className="title-row">
-              <h1>🔴 MARS HABITAT</h1>
+              <h1>MARS 🔴PERATIONS</h1>
             </div>
-            <div className="subtitle">Automation Control Center</div>
-            <span className="group-name-label" onClick={() => setGroupNameStep(p => (p + 1) % GROUP_NAMES.length)}>
-              {GROUP_NAMES[groupNameStep]}
-            </span>
+            <div className="subtitle">by SpaceY<sup>Ⓡ</sup> and&nbsp;
+              <span className="group-name-label" onClick={() => setGroupNameStep(p => (p + 1) % GROUP_NAMES.length)}>
+                {GROUP_NAMES[groupNameStep]}
+              </span>
+            </div>
           </div>
         </div>
         <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>
           <span className="status-dot"></span>
           {connected ? 'LIVE' : 'OFFLINE'}
         </div>
-      </header>
+      </header >
 
       <main className="dashboard-layout">
         <section className="dashboard-panel sensors-panel">
           <div className="panel-header">
-            <h2>📡 Telemetry Stream</h2>
+            <h2>📡 Sensors' data</h2>
             <div className="view-toggle">
               <button className={`view-btn ${!sensorListView ? 'active' : ''}`} onClick={() => setSensorListView(false)} title="Grid view">▦</button>
               <button className={`view-btn ${sensorListView ? 'active' : ''}`} onClick={() => setSensorListView(true)} title="List view">☰</button>
@@ -530,7 +531,7 @@ export default function App() {
 
           <section className="dashboard-panel rules-panel">
             <div className="panel-header">
-              <h2>🧠 Automation Logic</h2>
+              <h2>🧠 Automation Rules</h2>
               <button className="btn btn-primary btn-sm" onClick={() => { setEditingRule(null); setShowModal(true); }}>
                 + New
               </button>
@@ -588,13 +589,15 @@ export default function App() {
         </div>
       </main>
 
-      {showModal && (
-        <RuleFormModal
-          onClose={() => { setShowModal(false); setEditingRule(null); }}
-          onSave={editingRule ? handleEditRule : handleCreateRule}
-          initial={editingRule}
-        />
-      )}
+      {
+        showModal && (
+          <RuleFormModal
+            onClose={() => { setShowModal(false); setEditingRule(null); }}
+            onSave={editingRule ? handleEditRule : handleCreateRule}
+            initial={editingRule}
+          />
+        )
+      }
     </>
   );
 }
