@@ -297,12 +297,19 @@ function RuleFormModal({ onClose, onSave, initial }) {
 
 // ── Main App ────────────────────────────────────────────────
 
+const GROUP_NAMES = [
+  "MLPG",
+  "Members of Laboratory of Programming Group",
+  "Mecella Lassace Passà, per Grazia"
+];
+
 export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const [deletingRuleId, setDeletingRuleId] = useState(null);
   const [sensorListView, setSensorListView] = useState(false);
   const [expandedSensor, setExpandedSensor] = useState(null);
+  const [groupNameStep, setGroupNameStep] = useState(0);
   const { connected, lastEvent } = useWebSocket();
   const { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState } = useApiState();
   const sensorHistoryRef = useRef({});
@@ -431,8 +438,13 @@ export default function App() {
       <header className="header">
         <div className="header-brand">
           <div>
-            <h1>🔴 MARS HABITAT</h1>
+            <div className="title-row">
+              <h1>🔴 MARS HABITAT</h1>
+            </div>
             <div className="subtitle">Automation Control Center</div>
+            <span className="group-name-label" onClick={() => setGroupNameStep(p => (p + 1) % GROUP_NAMES.length)}>
+              {GROUP_NAMES[groupNameStep]}
+            </span>
           </div>
         </div>
         <div className={`connection-status ${connected ? 'connected' : 'disconnected'}`}>

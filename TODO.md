@@ -4,4 +4,4 @@
 - [x] Change GUI (everything in a single page)
 - [ ] Handle conflict within rules (solve with timers)
 - [x] Write last user story
-- [ ] Substitute us in `input.md` with those in `us.md`
+- [x] Substitute us in `input.md` with those in `us.md`

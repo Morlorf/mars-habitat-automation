@@ -88,6 +88,25 @@ body {
   filter: drop-shadow(0 0 8px var(--mars-accent-glow));
 }
 
+.title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.group-name-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: color 0.2s ease;
+  user-select: none;
+}
+
+.group-name-label:hover {
+  color: var(--text-primary);
+}
+
 .header-brand .subtitle {
   font-size: 0.75rem;
   color: var(--text-secondary);
