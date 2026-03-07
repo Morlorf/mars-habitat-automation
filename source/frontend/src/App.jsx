@@ -50,13 +50,15 @@ function useApiState() {
   const [sensors, setSensors] = useState({});
   const [rules, setRules] = useState([]);
   const [actuators, setActuators] = useState({});
+   const [activeConflicts, setActiveConflicts] = useState({});
 
   const fetchState = useCallback(async () => {
     try {
-      const [stateRes, rulesRes, actRes] = await Promise.all([
+      const [stateRes, rulesRes, actRes, conflictsRes] = await Promise.all([
         fetch(`${API_BASE}/api/state`),
         fetch(`${API_BASE}/api/rules`),
         fetch(`${API_BASE}/api/actuators`),
+        fetch(`${API_BASE}/api/conflicts`),
       ]);
       if (stateRes.ok) setSensors(await stateRes.json());
       if (rulesRes.ok) setRules(await rulesRes.json());
@@ -64,12 +66,16 @@ function useApiState() {
         const data = await actRes.json();
         setActuators(data.actuators || data);
       }
+      if (conflictsRes.ok) {
+        const data = await conflictsRes.json();
+        setActiveConflicts(data || {});
+      }
     } catch (e) { console.error('Fetch error:', e); }
   }, []);
 
   useEffect(() => { fetchState(); }, [fetchState]);
 
-  return { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState };
+  return { sensors, setSensors, rules, setRules, actuators, setActuators, activeConflicts, setActiveConflicts, fetchState };
 }
 
 // ── Mini SVG Chart ──────────────────────────────────────────
@@ -315,10 +321,19 @@ export default function App() {
   const [expandedSensor, setExpandedSensor] = useState(null);
   const [groupNameStep, setGroupNameStep] = useState(0);
   const { connected, lastEvent } = useWebSocket();
-  const { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState } = useApiState();
+  const {
+    sensors,
+    setSensors,
+    rules,
+    setRules,
+    actuators,
+    setActuators,
+    activeConflicts,
+    setActiveConflicts,
+    fetchState,
+  } = useApiState();
   const sensorHistoryRef = useRef({});
   const [sensorHistory, setSensorHistory] = useState({});
-  const [activeConflicts, setActiveConflicts] = useState({});
 
   // Live update sensors from WebSocket events + accumulate history
   useEffect(() => {
@@ -417,6 +432,28 @@ export default function App() {
       if (res.ok) {
         const updated = await res.json();
         setRules((prev) => prev.map((r) => (r.id === rule.id ? updated : r)));
+
+        // If this rule was part of an active conflict and we just disabled it,
+        // optimistically update the conflict state so the UI clears immediately.
+        if (rule.is_active && !updated.is_active) {
+          const actuator = rule.action?.actuator;
+          if (actuator) {
+            setActiveConflicts((prev) => {
+              const next = { ...prev };
+              const existing = next[actuator] || [];
+              const filtered = existing.filter((id) => String(id) !== String(rule.id));
+
+              // A conflict requires at least two rules; if we drop below that,
+              // remove the conflict entry for this actuator.
+              if (filtered.length < 2) {
+                delete next[actuator];
+              } else {
+                next[actuator] = filtered;
+              }
+              return next;
+            });
+          }
+        }
       }
     } catch (e) { console.error('Toggle rule error:', e); }
   };

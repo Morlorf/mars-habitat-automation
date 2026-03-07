@@ -27,6 +27,9 @@ class Arbitrator:
         self._tasks: dict[str, asyncio.Task] = {}
         # Tracks active UI conflict state for actuators (True if currently in conflict)
         self._active_conflicts: dict[str, bool] = {}
+        # Tracks rule IDs involved in each active conflict so the UI
+        # can reconstruct conflict highlights after a page reload.
+        self._active_conflict_rule_ids: dict[str, list[int]] = {}
 
     async def submit_command(self, rule: RuleResponse, actuator: str, state: str, event_data: dict) -> None:
         """Submit a command to the arbitrator queue."""
@@ -61,9 +64,11 @@ class Arbitrator:
         
         if has_conflict and not currently_in_conflict:
             self._active_conflicts[actuator] = True
+            self._active_conflict_rule_ids[actuator] = rule_ids
             await self._broadcast_conflict(actuator, rule_ids, resolved=False, event_data=original_event)
         elif not has_conflict and currently_in_conflict:
             self._active_conflicts[actuator] = False
+            self._active_conflict_rule_ids.pop(actuator, None)
             await self._broadcast_conflict(actuator, [], resolved=True, event_data=original_event)
 
         # Resolve state
@@ -177,6 +182,18 @@ class Arbitrator:
             await publisher.publish(alert)
         except Exception as e:
             logger.error("Failed to publish alert event: %s", e)
+
+    def get_active_conflicts(self) -> dict[str, list[int]]:
+        """
+        Return a snapshot of currently active conflicts.
+
+        Shape:
+          { "<actuator_id>": [<rule_id>, ...], ... }
+
+        Used by the API to let the frontend restore conflict badges
+        and borders after a page reload.
+        """
+        return dict(self._active_conflict_rule_ids)
 
 # Singleton instance for the app
 arbitrator = Arbitrator(window_seconds=0.5)

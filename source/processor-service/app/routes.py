@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from app.arbitrator import arbitrator
 from app.consumer import refresh_rules_cache
 from app.database import (
     create_rule,
@@ -51,6 +52,19 @@ async def get_sensor_state(source: str):
     if data is None:
         raise HTTPException(status_code=404, detail=f"Sensor '{source}' not found")
     return data
+
+
+# ── Conflict Introspection ────────────────────────────────────
+
+@router.get("/api/conflicts")
+async def list_conflicts():
+    """
+    Return currently active rule conflicts.
+
+    Shape:
+      { "<actuator_id>": [<rule_id>, ...], ... }
+    """
+    return arbitrator.get_active_conflicts()
 
 
 # ── Rule CRUD Endpoints ─────────────────────────────────────

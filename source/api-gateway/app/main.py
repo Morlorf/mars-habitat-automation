@@ -137,6 +137,14 @@ async def get_sensor_state(source: str):
     return await _proxy_get(f"{settings.PROCESSOR_SERVICE_URL}/api/state/{source}")
 
 
+# ── Conflict Proxy ────────────────────────────────────────────
+
+@app.get("/api/conflicts")
+async def list_conflicts():
+    """Proxy for active rule conflicts."""
+    return await _proxy_get(f"{settings.PROCESSOR_SERVICE_URL}/api/conflicts")
+
+
 # ── Rules Proxy ──────────────────────────────────────────────
 
 @app.get("/api/rules")
