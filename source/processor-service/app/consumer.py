@@ -13,11 +13,9 @@ from datetime import datetime, timezone
 
 import aio_pika
 
-from app.actuator import send_actuator_command
+from app.arbitrator import arbitrator
 from app.config import settings
 from app.database import get_active_rules
-from app.models import EventType, UnifiedEvent
-from app.rabbitmq_publisher import publisher
 from app.rules import evaluate_rules
 from app.state import state_cache
 
@@ -97,64 +95,10 @@ async def _handle_message(message: aio_pika.IncomingMessage) -> None:
     # 2. Evaluate rules
     triggered = evaluate_rules(data, _active_rules_cache)
 
-    # 3. Execute triggered rule actions
+    # 3. Execute triggered rule actions via Arbitrator
     for rule in triggered:
         action = rule.action
-        success = await send_actuator_command(action.actuator, action.state)
-
-        # Publish an actuator_command event for audit trail
-        actuator_event = {
-            "event_id": str(uuid.uuid4()),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "source": action.actuator,
-            "event_type": EventType.ACTUATOR_COMMAND.value,
-            "location": data.get("location", "unknown"),
-            "payload": {
-                "actuator_id": action.actuator,
-                "command": action.state,
-                "parameters": {},
-                "triggered_by": f"rule-{rule.id}",
-                "success": success,
-            },
-            "metadata": {
-                "rule_name": rule.name,
-                "trigger_source": data.get("source", "unknown"),
-            },
-        }
-        try:
-            event = UnifiedEvent(**actuator_event)
-            await publisher.publish(event)
-        except Exception as e:
-            logger.error("Failed to publish actuator event: %s", e)
-
-        # If actuator command failed after all retries, publish an alert event
-        if not success:
-            alert_event = {
-                "event_id": str(uuid.uuid4()),
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "source": action.actuator,
-                "event_type": EventType.ALERT.value,
-                "location": data.get("location", "unknown"),
-                "payload": {
-                    "severity": "critical",
-                    "message": f"Actuator '{action.actuator}' failed to execute command '{action.state}' after retries",
-                    "related_source": data.get("source", "unknown"),
-                    "threshold_breached": None,
-                },
-                "metadata": {
-                    "rule_name": rule.name,
-                    "rule_id": rule.id,
-                },
-            }
-            try:
-                alert = UnifiedEvent(**alert_event)
-                await publisher.publish(alert)
-                logger.warning(
-                    "Alert published: actuator '%s' failed for rule '%s'",
-                    action.actuator, rule.name,
-                )
-            except Exception as e:
-                logger.error("Failed to publish alert event: %s", e)
+        await arbitrator.submit_command(rule, action.actuator, action.state, data)
 
 
 async def close_consumer() -> None:

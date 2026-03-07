@@ -706,6 +706,46 @@ body {
   transform: translateX(4px);
 }
 
+.rule-card.conflict-glow {
+  border-color: var(--mars-yellow);
+  box-shadow: 0 0 15px var(--mars-yellow-glow), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  animation: pulse-conflict 2s infinite;
+}
+
+@keyframes pulse-conflict {
+  0% {
+    box-shadow: 0 0 10px var(--mars-yellow-glow);
+  }
+
+  50% {
+    box-shadow: 0 0 25px rgba(245, 158, 11, 0.6);
+  }
+
+  100% {
+    box-shadow: 0 0 10px var(--mars-yellow-glow);
+  }
+}
+
+.conflict-warning {
+  margin-left: 8px;
+  font-size: 1.1em;
+  cursor: help;
+  animation: float-warning 2s infinite ease-in-out;
+  display: inline-block;
+}
+
+@keyframes float-warning {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 .rule-card.inactive {
   opacity: 0.4;
   filter: grayscale(1);

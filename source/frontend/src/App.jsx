@@ -26,7 +26,11 @@ function useWebSocket() {
         reconnectTimer = setTimeout(connect, 3000);
       };
       ws.onmessage = (e) => {
-        try { setLastEvent(JSON.parse(e.data)); } catch { }
+        try {
+          const data = JSON.parse(e.data);
+          data._receivedAt = Date.now();
+          setLastEvent(data);
+        } catch { }
       };
       ws.onerror = () => ws.close();
     }
@@ -314,6 +318,7 @@ export default function App() {
   const { sensors, setSensors, rules, setRules, actuators, setActuators, fetchState } = useApiState();
   const sensorHistoryRef = useRef({});
   const [sensorHistory, setSensorHistory] = useState({});
+  const [activeConflicts, setActiveConflicts] = useState({});
 
   // Live update sensors from WebSocket events + accumulate history
   useEffect(() => {
@@ -338,6 +343,21 @@ export default function App() {
       const cmd = lastEvent.payload?.command;
       if (act && cmd) {
         setActuators((prev) => ({ ...prev, [act]: cmd }));
+      }
+    }
+    if (lastEvent.event_type === 'rule_conflict') {
+      const act = lastEvent.payload?.actuator_id;
+      const ruleIds = lastEvent.payload?.rule_ids || [];
+      const resolved = lastEvent.payload?.resolved;
+      if (act) {
+        setActiveConflicts((prev) => {
+          if (resolved) {
+            const next = { ...prev };
+            delete next[act];
+            return next;
+          }
+          return { ...prev, [act]: ruleIds };
+        });
       }
     }
   }, [lastEvent, setSensors, setActuators]);
@@ -519,10 +539,19 @@ export default function App() {
               <div className="rules-list">
                 {rules.map((rule) => {
                   const actLabel = rule.action.actuator.replace(/_/g, ' ');
+                  const conflictRuleIds = Object.values(activeConflicts).flat().map(id => String(id));
+                  const inConflict = conflictRuleIds.includes(String(rule.id));
                   return (
-                    <div key={rule.id} className={`rule-card ${rule.is_active ? '' : 'inactive'}`}>
+                    <div key={rule.id} className={`rule-card ${rule.is_active ? '' : 'inactive'} ${inConflict ? 'conflict-glow' : ''}`}>
                       <div className="rule-info">
-                        <h3>{rule.name}</h3>
+                        <h3>
+                          {rule.name}
+                          {inConflict && (
+                            <span className="conflict-warning" title="Conflict Detected: Multiple rules trying to set different states for this actuator">
+                              ⚠️
+                            </span>
+                          )}
+                        </h3>
                         <div className="rule-detail">
                           IF {formatCondition(rule.condition)} → set {actLabel} to {rule.action.state}
                         </div>

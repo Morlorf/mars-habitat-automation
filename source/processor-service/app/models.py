@@ -22,6 +22,7 @@ class EventType(str, Enum):
     SENSOR_READING = "sensor_reading"
     ACTUATOR_COMMAND = "actuator_command"
     ALERT = "alert"
+    RULE_CONFLICT = "rule_conflict"
 
 
 class UnifiedEvent(BaseModel):
